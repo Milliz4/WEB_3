@@ -1,3 +1,12 @@
-from django.shortcuts import render
+from django.http import HttpResponse
+from customers.models import Customer
 
-# Create your views here.
+
+def show_customers(request):
+    customers = Customer.objects.all()
+
+    result = ""
+    for c in customers:
+        result += c.name + "<br>"
+
+    return HttpResponse(result)
