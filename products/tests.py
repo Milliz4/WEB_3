@@ -202,3 +202,16 @@ class TestReviewViewSet:
         assert Review.objects.count() == 9
         get_response = client.get('/api/reviews/')
         assert reviews[0].id not in [i['id'] for i in get_response.data]
+
+    def test_create_order(self, client):
+        data = {'status': 'CREATED', 'total': '1000.00'}
+        response = client.post('/api/orders/', data)
+        assert response.status_code == 201
+
+    def test_update_order(self, client):
+        order = baker.make('products.Order')
+        data = {'status': 'DELIVERED', 'total': '1500.00'}
+        response = client.put(f'/api/orders/{order.id}/', data)
+        assert response.status_code == 200
+        order.refresh_from_db()
+        assert order.status == data['status']

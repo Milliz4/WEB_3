@@ -1,0 +1,91 @@
+@startuml OnlineStore
+!define TABLEBKG #F5F5F5
+!define PKBKG #E8F4F8
+!define FKBKG #FFF4E6
+
+skinparam backgroundColor #FFFFFF
+skinparam class {
+    BackgroundColor TABLEBKG
+    BorderColor #333333
+    ArrowColor #333333
+}
+
+entity "Категория" as Category {
+    **id** : INT <<PK>>
+    --
+    название : VARCHAR
+}
+
+entity "Производитель" as Manufacturer {
+    **id** : INT <<PK>>
+    --
+    название : VARCHAR
+    страна : VARCHAR
+}
+
+entity "Товар" as Product {
+    **id** : INT <<PK>>
+    --
+    **категория_id** : INT <<FK>>
+    **производитель_id** : INT <<FK>>
+    название : VARCHAR
+    цена : DECIMAL
+    остаток : INT
+}
+
+entity "Покупатель" as Customer {
+    **id** : INT <<PK>>
+    --
+    ФИ : VARCHAR
+    email : VARCHAR
+    телефон : VARCHAR
+}
+
+entity "Адрес" as Address {
+    **id** : INT <<PK>>
+    --
+    **покупатель_id** : INT <<FK>>
+    улица : VARCHAR
+    город : VARCHAR
+    почтовый_индекс : VARCHAR
+}
+
+entity "Заказ" as Order {
+    **id** : INT <<PK>>
+    --
+    **покупатель_id** : INT <<FK>>
+    **адрес_id** : INT <<FK>>
+    дата_создания : DATETIME
+    статус : VARCHAR
+}
+
+entity "ПозицияЗаказа" as OrderItem {
+    **id** : INT <<PK>>
+    --
+    **заказ_id** : INT <<FK>>
+    **товар_id** : INT <<FK>>
+    количество : INT
+    цена : DECIMAL
+}
+
+entity "Отзыв" as Review {
+    **id** : INT <<PK>>
+    --
+    **товар_id** : INT <<FK>>
+    **покупатель_id** : INT <<FK>>
+    рейтинг : INT
+    текст_отзыва : TEXT
+    дата_создания : DATETIME
+}
+
+Category ||--o{ Product : содержит
+Manufacturer ||--o{ Product : производит
+Customer ||--o{ Address : имеет
+Customer ||--o{ Order : делает
+Address ||--o{ Order : доставляет
+Order ||--o{ OrderItem : содержит
+Product ||--o{ OrderItem : входит
+Product ||--o{ Review : получает
+Customer ||--o{ Review : пишет
+
+@enduml

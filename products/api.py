@@ -1,6 +1,8 @@
 from rest_framework import viewsets, mixins
 from products.models import Category, Product, Order, OrderItem, Review
 from products.serializers import CategorySerializer, ProductSerializer, OrderSerializer, OrderItemSerializer, ReviewSerializer
+from django.contrib.auth.models import User
+from products.serializers import UserSerializer
 
 
 class CategoryViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
@@ -26,3 +28,7 @@ class OrderItemViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixins.Re
 class ReviewViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
+
+class UserViewSet(mixins.ListModelMixin,  viewsets.GenericViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
