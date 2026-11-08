@@ -1,19 +1,38 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
-from django.views.generic import RedirectView
 from rest_framework.routers import DefaultRouter
-from products.api import CategoryViewSet, ProductViewSet, OrderViewSet, OrderItemViewSet, ReviewViewSet, UserViewSet
+
+from products.api import (
+    CustomersViewset,
+    AddressesViewset,
+    CategoriesViewset,
+    ManufacturersViewset,
+    ProductsViewset,
+    ProductPhotosViewset,
+    OrdersViewset,
+    OrderItemsViewset,
+    ReviewsViewset,
+    ProfileViewSet,
+)
 
 router = DefaultRouter()
-router.register('categories', CategoryViewSet)
-router.register('products', ProductViewSet)
-router.register('orders', OrderViewSet)
-router.register('order-items', OrderItemViewSet)
-router.register('reviews', ReviewViewSet)
-router.register('users', UserViewSet)
+router.register("customers", CustomersViewset, "customers")
+router.register("addresses", AddressesViewset, "addresses")
+router.register("categories", CategoriesViewset, "categories")
+router.register("manufacturers", ManufacturersViewset, "manufacturers")
+router.register("products", ProductsViewset, "products")
+router.register("product-photos", ProductPhotosViewset, "product-photos")
+router.register("orders", OrdersViewset, "orders")
+router.register("order-items", OrderItemsViewset, "order-items")
+router.register("reviews", ReviewsViewset, "reviews")
+router.register("profile", ProfileViewSet, "profile")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
-    path('', RedirectView.as_view(url='/api/')),
-]
+] + static(
+    settings.MEDIA_URL,
+    document_root=settings.MEDIA_ROOT
+)

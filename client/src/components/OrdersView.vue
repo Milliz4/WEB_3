@@ -3,7 +3,8 @@ import { ref, computed, onBeforeMount } from 'vue'
 import axios from 'axios'
 
 const orders = ref([])
-const users = ref([])
+const customers = ref([])
+const addresses = ref([])
 const orderToAdd = ref({})
 const orderToEdit = ref({})
 
@@ -14,44 +15,48 @@ const statuses = [
   { id: 'CANCELLED', name: 'Отменён' },
 ]
 
-const paymentMethods = [
-  { id: 'CASH', name: 'Наличные' },
-  { id: 'CONLINE', name: 'Картой онлайн' },
-  { id: 'CCOURIER', name: 'Картой курьеру' },
-]
-
-const usersById = computed(() => {
+const customersById = computed(() => {
   const result = {}
-  for (const u of users.value) {
-    result[u.id] = u
+  for (const x of customers.value) {
+    result[x.id] = x
+  }
+  return result
+})
+
+const addressesById = computed(() => {
+  const result = {}
+  for (const x of addresses.value) {
+    result[x.id] = x
   }
   return result
 })
 
 const statusesById = computed(() => {
   const result = {}
-  for (const s of statuses) {
-    result[s.id] = s
+  for (const x of statuses) {
+    result[x.id] = x
   }
   return result
 })
 
-const paymentMethodsById = computed(() => {
-  const result = {}
-  for (const p of paymentMethods) {
-    result[p.id] = p
-  }
-  return result
-})
+// В списке адресов показываем только адреса выбранного покупателя
+function addressesFor(customerId) {
+  return addresses.value.filter((a) => a.customer === customerId)
+}
 
 async function fetchOrders() {
   const r = await axios.get('/api/orders/')
   orders.value = r.data
 }
 
-async function fetchUsers() {
-  const r = await axios.get('/api/users/')
-  users.value = r.data
+async function fetchCustomers() {
+  const r = await axios.get('/api/customers/')
+  customers.value = r.data
+}
+
+async function fetchAddresses() {
+  const r = await axios.get('/api/addresses/')
+  addresses.value = r.data
 }
 
 async function onOrderAdd() {
@@ -79,7 +84,8 @@ async function onUpdateOrder() {
 
 onBeforeMount(async () => {
   await fetchOrders()
-  await fetchUsers()
+  await fetchCustomers()
+  await fetchAddresses()
 })
 </script>
 
@@ -90,32 +96,26 @@ onBeforeMount(async () => {
     <div class="row">
       <div class="col">
         <div class="form-floating">
-          <select class="form-select" v-model="orderToAdd.customer">
-            <option :value="u.id" v-for="u in users">{{ u.username }}</option>
+          <select class="form-select" v-model="orderToAdd.customer" required>
+            <option :value="o.id" v-for="o in customers">{{ o.full_name }}</option>
           </select>
           <label for="floatingInput">Покупатель</label>
         </div>
       </div>
       <div class="col">
         <div class="form-floating">
+          <select class="form-select" v-model="orderToAdd.address" required>
+            <option :value="o.id" v-for="o in addressesFor(orderToAdd.customer)">{{ o.city }}, {{ o.street }}</option>
+          </select>
+          <label for="floatingInput">Адрес</label>
+        </div>
+      </div>
+      <div class="col">
+        <div class="form-floating">
           <select class="form-select" v-model="orderToAdd.status" required>
-            <option :value="s.id" v-for="s in statuses">{{ s.name }}</option>
+            <option :value="o.id" v-for="o in statuses">{{ o.name }}</option>
           </select>
           <label for="floatingInput">Статус</label>
-        </div>
-      </div>
-      <div class="col">
-        <div class="form-floating">
-          <input type="number" step="0.01" class="form-control" v-model="orderToAdd.total" required />
-          <label for="floatingInput">Сумма</label>
-        </div>
-      </div>
-      <div class="col">
-        <div class="form-floating">
-          <select class="form-select" v-model="orderToAdd.payment_method" required>
-            <option :value="p.id" v-for="p in paymentMethods">{{ p.name }}</option>
-          </select>
-          <label for="floatingInput">Оплата</label>
         </div>
       </div>
       <div class="col-auto">
@@ -126,10 +126,9 @@ onBeforeMount(async () => {
 
   <div v-for="item in orders" class="item">
     <div>Заказ #{{ item.id }}</div>
-    <div>{{ usersById[item.customer]?.username }}</div>
+    <div>{{ customersById[item.customer]?.full_name }}</div>
+    <div>{{ addressesById[item.address]?.city }}, {{ addressesById[item.address]?.street }}</div>
     <div>{{ statusesById[item.status]?.name }}</div>
-    <div>{{ item.total }} руб.</div>
-    <div>{{ paymentMethodsById[item.payment_method]?.name }}</div>
     <button
       class="btn btn-success"
       @click="onOrderEditClick(item)"
@@ -151,25 +150,21 @@ onBeforeMount(async () => {
         <div class="modal-body">
           <div class="form-floating mb-2">
             <select class="form-select" v-model="orderToEdit.customer">
-              <option :value="u.id" v-for="u in users">{{ u.username }}</option>
+              <option :value="o.id" v-for="o in customers">{{ o.full_name }}</option>
             </select>
             <label for="floatingInput">Покупатель</label>
           </div>
           <div class="form-floating mb-2">
-            <select class="form-select" v-model="orderToEdit.status">
-              <option :value="s.id" v-for="s in statuses">{{ s.name }}</option>
+            <select class="form-select" v-model="orderToEdit.address">
+              <option :value="o.id" v-for="o in addressesFor(orderToEdit.customer)">{{ o.city }}, {{ o.street }}</option>
             </select>
-            <label for="floatingInput">Статус</label>
-          </div>
-          <div class="form-floating mb-2">
-            <input type="number" step="0.01" class="form-control" v-model="orderToEdit.total" />
-            <label for="floatingInput">Сумма</label>
+            <label for="floatingInput">Адрес</label>
           </div>
           <div class="form-floating">
-            <select class="form-select" v-model="orderToEdit.payment_method">
-              <option :value="p.id" v-for="p in paymentMethods">{{ p.name }}</option>
+            <select class="form-select" v-model="orderToEdit.status">
+              <option :value="o.id" v-for="o in statuses">{{ o.name }}</option>
             </select>
-            <label for="floatingInput">Оплата</label>
+            <label for="floatingInput">Статус</label>
           </div>
         </div>
         <div class="modal-footer">

@@ -2,28 +2,31 @@
 import { ref, computed, onBeforeMount } from 'vue'
 import axios from 'axios'
 
-const orderItems = ref([])
-const orders = ref([])
+const reviews = ref([])
 const products = ref([])
-const orderItemToAdd = ref({})
-const orderItemToEdit = ref({})
+const customers = ref([])
+const reviewToAdd = ref({})
+const reviewToEdit = ref({})
 
 const productsById = computed(() => {
   const result = {}
-  for (const p of products.value) {
-    result[p.id] = p
+  for (const x of products.value) {
+    result[x.id] = x
   }
   return result
 })
 
-async function fetchOrderItems() {
-  const r = await axios.get('/api/order-items/')
-  orderItems.value = r.data
-}
+const customersById = computed(() => {
+  const result = {}
+  for (const x of customers.value) {
+    result[x.id] = x
+  }
+  return result
+})
 
-async function fetchOrders() {
-  const r = await axios.get('/api/orders/')
-  orders.value = r.data
+async function fetchReviews() {
+  const r = await axios.get('/api/reviews/')
+  reviews.value = r.data
 }
 
 async function fetchProducts() {
@@ -31,67 +34,72 @@ async function fetchProducts() {
   products.value = r.data
 }
 
-async function onOrderItemAdd() {
-  await axios.post('/api/order-items/', {
-    ...orderItemToAdd.value,
+async function fetchCustomers() {
+  const r = await axios.get('/api/customers/')
+  customers.value = r.data
+}
+
+async function onReviewAdd() {
+  await axios.post('/api/reviews/', {
+    ...reviewToAdd.value,
   })
-  await fetchOrderItems()
+  await fetchReviews()
 }
 
-async function onRemoveClick(orderItem) {
-  await axios.delete(`/api/order-items/${orderItem.id}/`)
-  await fetchOrderItems()
+async function onRemoveClick(review) {
+  await axios.delete(`/api/reviews/${review.id}/`)
+  await fetchReviews()
 }
 
-async function onOrderItemEditClick(orderItem) {
-  orderItemToEdit.value = { ...orderItem }
+async function onReviewEditClick(review) {
+  reviewToEdit.value = { ...review }
 }
 
-async function onUpdateOrderItem() {
-  await axios.put(`/api/order-items/${orderItemToEdit.value.id}/`, {
-    ...orderItemToEdit.value,
+async function onUpdateReview() {
+  await axios.put(`/api/reviews/${reviewToEdit.value.id}/`, {
+    ...reviewToEdit.value,
   })
-  await fetchOrderItems()
+  await fetchReviews()
 }
 
 onBeforeMount(async () => {
-  await fetchOrderItems()
-  await fetchOrders()
+  await fetchReviews()
   await fetchProducts()
+  await fetchCustomers()
 })
 </script>
 
 <template>
-  <h2>Позиции заказов</h2>
+  <h2>Отзывы</h2>
 
-  <form @submit.prevent.stop="onOrderItemAdd">
+  <form @submit.prevent.stop="onReviewAdd">
     <div class="row">
       <div class="col">
         <div class="form-floating">
-          <select class="form-select" v-model="orderItemToAdd.order" required>
-            <option :value="o.id" v-for="o in orders">Заказ #{{ o.id }}</option>
-          </select>
-          <label for="floatingInput">Заказ</label>
-        </div>
-      </div>
-      <div class="col">
-        <div class="form-floating">
-          <select class="form-select" v-model="orderItemToAdd.product" required>
-            <option :value="p.id" v-for="p in products">{{ p.name }}</option>
+          <select class="form-select" v-model="reviewToAdd.product" required>
+            <option :value="o.id" v-for="o in products">{{ o.name }}</option>
           </select>
           <label for="floatingInput">Товар</label>
         </div>
       </div>
       <div class="col">
         <div class="form-floating">
-          <input type="number" class="form-control" v-model="orderItemToAdd.quantity" required />
-          <label for="floatingInput">Количество</label>
+          <select class="form-select" v-model="reviewToAdd.customer" required>
+            <option :value="o.id" v-for="o in customers">{{ o.full_name }}</option>
+          </select>
+          <label for="floatingInput">Покупатель</label>
         </div>
       </div>
       <div class="col">
         <div class="form-floating">
-          <input type="number" step="0.01" class="form-control" v-model="orderItemToAdd.price" required />
-          <label for="floatingInput">Цена</label>
+          <input type="number" min="1" max="5" class="form-control" v-model="reviewToAdd.rating" required />
+          <label for="floatingInput">Оценка</label>
+        </div>
+      </div>
+      <div class="col">
+        <div class="form-floating">
+          <input type="text" class="form-control" v-model="reviewToAdd.text" required />
+          <label for="floatingInput">Текст</label>
         </div>
       </div>
       <div class="col-auto">
@@ -100,23 +108,23 @@ onBeforeMount(async () => {
     </div>
   </form>
 
-  <div v-for="item in orderItems" class="item">
-    <div>Заказ #{{ item.order }}</div>
+  <div v-for="item in reviews" class="item">
     <div>{{ productsById[item.product]?.name }}</div>
-    <div>{{ item.quantity }} шт.</div>
-    <div>{{ item.price }} руб.</div>
+    <div>{{ customersById[item.customer]?.full_name }}</div>
+    <div>{{ item.rating }} / 5</div>
+    <div>{{ item.text }}</div>
     <button
       class="btn btn-success"
-      @click="onOrderItemEditClick(item)"
+      @click="onReviewEditClick(item)"
       data-bs-toggle="modal"
-      data-bs-target="#editOrderItemModal"
+      data-bs-target="#editReviewModal"
     >
       Изменить
     </button>
     <button class="btn btn-danger" @click="onRemoveClick(item)">Удалить</button>
   </div>
 
-  <div class="modal fade" id="editOrderItemModal" tabindex="-1">
+  <div class="modal fade" id="editReviewModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -125,29 +133,29 @@ onBeforeMount(async () => {
         </div>
         <div class="modal-body">
           <div class="form-floating mb-2">
-            <select class="form-select" v-model="orderItemToEdit.order">
-              <option :value="o.id" v-for="o in orders">Заказ #{{ o.id }}</option>
-            </select>
-            <label for="floatingInput">Заказ</label>
-          </div>
-          <div class="form-floating mb-2">
-            <select class="form-select" v-model="orderItemToEdit.product">
-              <option :value="p.id" v-for="p in products">{{ p.name }}</option>
+            <select class="form-select" v-model="reviewToEdit.product">
+              <option :value="o.id" v-for="o in products">{{ o.name }}</option>
             </select>
             <label for="floatingInput">Товар</label>
           </div>
           <div class="form-floating mb-2">
-            <input type="number" class="form-control" v-model="orderItemToEdit.quantity" />
-            <label for="floatingInput">Количество</label>
+            <select class="form-select" v-model="reviewToEdit.customer">
+              <option :value="o.id" v-for="o in customers">{{ o.full_name }}</option>
+            </select>
+            <label for="floatingInput">Покупатель</label>
+          </div>
+          <div class="form-floating mb-2">
+            <input type="number" min="1" max="5" class="form-control" v-model="reviewToEdit.rating" />
+            <label for="floatingInput">Оценка</label>
           </div>
           <div class="form-floating">
-            <input type="number" step="0.01" class="form-control" v-model="orderItemToEdit.price" />
-            <label for="floatingInput">Цена</label>
+            <input type="text" class="form-control" v-model="reviewToEdit.text" />
+            <label for="floatingInput">Текст</label>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button data-bs-dismiss="modal" type="button" class="btn btn-primary" @click="onUpdateOrderItem">
+          <button data-bs-dismiss="modal" type="button" class="btn btn-primary" @click="onUpdateReview">
             Сохранить
           </button>
         </div>

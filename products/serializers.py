@@ -1,30 +1,67 @@
-from django.contrib.auth.models import User
 from rest_framework import serializers
-from products.models import Category, Product, Order, OrderItem, Review
 
+from products.models import (
+    Customer,
+    Address,
+    Category,
+    Manufacturer,
+    Product,
+    ProductPhoto,
+    Order,
+    OrderItem,
+    Review,
+)
 
-class UserSerializer(serializers.ModelSerializer):
+class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ['id', 'username']
+        model = Customer
+        fields = "__all__"
+
+
+class AddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = "__all__"
 
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'name']
+        fields = "__all__"
+
+
+class ManufacturerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Manufacturer
+        fields = ['id', 'name', 'country', 'picture']
 
 
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ['id', 'name', 'description', 'price', 'stock', 'category']
+        fields = ['id', 'category', 'manufacturer', 'name', 'price', 'stock', 'picture']
+
+
+class ProductPhotoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductPhoto
+        fields = ['id', 'product', 'image']
 
 
 class OrderSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        customer = attrs.get("customer", getattr(self.instance, "customer", None))
+        address = attrs.get("address", getattr(self.instance, "address", None))
+
+        if customer and address and address.customer_id != customer.id:
+            raise serializers.ValidationError("Этот адрес принадлежит другому покупателю")
+
+        return attrs
+
     class Meta:
         model = Order
-        fields = ['id', 'customer', 'created_at', 'status', 'total', 'payment_method']
+        fields = ['id', 'customer', 'address', 'created_at', 'status']
+        read_only_fields = ['created_at']
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -36,4 +73,5 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
-        fields = ['id', 'product', 'author', 'rating', 'text']
+        fields = ['id', 'customer', 'product', 'rating', 'text', 'created_at']
+        read_only_fields = ['created_at']
